@@ -3,7 +3,7 @@ import pandas as pd
 import sys
 import subprocess
 
-# --- 1. DỮ LIỆU ĐẦU TƯ (Giữ nguyên từ bảng giá của bạn) ---
+# --- 1. DỮ LIỆU ĐẦU TƯ (Trích xuất từ image_00c59d.png) ---
 investment_data = [
     {"kwh": 300, "tien": 810000, "von": 55000000, "kwp_goi": 2.5},
     {"kwh": 400, "tien": 1139600, "von": 65000000, "kwp_goi": 3.5},
@@ -13,7 +13,7 @@ investment_data = [
     {"kwh": 1500, "tien": 5808990, "von": 200000000, "kwp_goi": 14.0},
 ]
 
-# --- 2. HỆ SỐ PVOUT LÝ THUYẾT 2026 (Giữ nguyên 34 tỉnh thành) ---
+# --- 2. HỆ SỐ PVout LÝ THUYẾT 2026 (Trích xuất từ image_00cca1.png) ---
 pv_data = {
     "Tuyên Quang": [49, 37, 52, 68, 108, 109, 120, 112, 107, 93, 80, 63],
     "Cao Bằng": [57, 54, 62, 77, 108, 115, 115, 114, 110, 98, 86, 69],
@@ -43,7 +43,7 @@ pv_data = {
     "Lâm Đồng": [139, 139, 161, 152, 142, 129, 118, 130, 115, 121, 117, 120],
     "Đồng Nai": [140, 139, 150, 146, 141, 127, 122, 120, 113, 121, 122, 129],
     "Tây Ninh": [113, 106, 123, 122, 130, 124, 115, 125, 105, 114, 110, 110],
-    "TP. Hồ Chí Minh": [119, 110, 132, 126, 133, 120, 115, 123, 106, 116, 112, 114],
+    "Hồ Chí Minh": [119, 110, 132, 126, 133, 120, 115, 123, 106, 116, 112, 114],
     "Đồng Tháp": [118, 111, 126, 127, 124, 112, 110, 118, 99, 106, 104, 107],
     "An Giang": [123, 113, 121, 123, 123, 108, 104, 111, 96, 106, 105, 112],
     "Vĩnh Long": [112, 111, 128, 124, 121, 109, 104, 112, 97, 100, 100, 103],
@@ -53,19 +53,22 @@ pv_data = {
 
 
 def main():
-    st.set_page_config(page_title="Solar Investment 2026", layout="wide")
+    st.set_page_config(page_title="DTSOLAR - Tư vấn Điện Mặt Trời", layout="wide")
+
+    # --- GIAO DIỆN CHÍNH ---
     st.title("☀️ PHẦN MỀM TƯ VẤN ĐẦU TƯ ĐIỆN MẶT TRỜI")
+    st.markdown("---")
 
     # --- INPUT ---
     with st.sidebar:
-        st.header("📍 Cài đặt")
-        tinh_chon = st.selectbox("Chọn Tỉnh/Thành phố:", sorted(list(pv_data.keys())), index=33)
+        st.header("📍 Thông tin khách hàng")
+        tinh_chon = st.selectbox("Chọn Tỉnh/Thành phố:", sorted(list(pv_data.keys())),
+                                 index=sorted(list(pv_data.keys())).index("Cà Mau"))
         tien_dien = st.number_input("Tiền điện hàng tháng (VNĐ):", min_value=0, value=2000000, step=100000)
-        # Thêm biến số giờ nắng để khách hàng tự chỉnh hoặc mặc định 4h
-        gio_nang = st.number_input("Số giờ nắng tương đương (h/ngày):", min_value=1.0, value=4.0, step=0.1)
+        gio_nang = st.number_input("Số giờ nắng trung bình/ngày (h):", min_value=1.0, value=4.0, step=0.1)
 
-    # --- LOGIC ---
-    # Tìm gói phù hợp nhất
+    # --- LOGIC TÍNH TOÁN ---
+    # Tra cứu gói đầu tư
     goi_chon = investment_data[0]
     for item in investment_data:
         if tien_dien <= item["tien"]:
@@ -73,46 +76,64 @@ def main():
             break
         goi_chon = item
 
-    # TÍNH TOÁN KW PIN CẦN THIẾT DỰA TRÊN 4H NẮNG
+    # Tính kW pin cần thiết (4h nắng)
     kwh_ngay = goi_chon["kwh"] / 30
     kwp_can_thiet = kwh_ngay / gio_nang
 
-    # Tính sản lượng thực tế theo địa phương
+    # Sản lượng thực tế theo địa phương
     he_so_tinh = pv_data[tinh_chon]
     san_luong_thang = [round(h * goi_chon["kwp_goi"], 1) for h in he_so_tinh]
     sl_tb_thang = sum(san_luong_thang) / 12
     hoan_von = goi_chon["von"] / (tien_dien * 12)
 
-    # --- DISPLAY ---
-    st.divider()
+    # --- HIỂN THỊ KẾT QUẢ ---
     col1, col2, col3, col4 = st.columns(4)
 
     with col1:
-        st.info("📦 **Gói đề xuất**")
-        st.metric("Vốn đầu tư", f"{goi_chon['von']:,} đ")
-        st.write(f"Tiêu thụ: ~{goi_chon['kwh']} kWh/tháng")
+        st.info("📦 **Mức đầu tư**")
+        st.metric("Vốn dự kiến", f"{goi_chon['von']:,} đ")
+        st.caption(f"Gói tiết kiệm ~{goi_chon['kwh']} kWh")
 
     with col2:
         st.error("⚡ **Công suất Pin**")
         st.metric("Cần lắp", f"{round(kwp_can_thiet, 2)} kWp")
-        st.write(f"Tính trên **{gio_nang}h** nắng/ngày")
+        st.caption(f"Dựa trên {gio_nang}h nắng/ngày")
 
     with col3:
-        st.success("🌍 **Địa phương**")
+        st.success("🌍 **Sản lượng**")
         st.metric("Sản lượng TB", f"{round(sl_tb_thang, 1)} kWh")
-        st.write(f"Khu vực: **{tinh_chon}**")
+        st.caption(f"Khu vực: {tinh_chon}")
 
     with col4:
         st.warning("💰 **Tài chính**")
         st.metric("Hoàn vốn", f"{round(hoan_von, 1)} năm")
-        st.write(f"Tiết kiệm: {(tien_dien * 12):,} đ/năm")
+        st.caption(f"Tiết kiệm: {(tien_dien * 12):,} đ/năm")
 
-    st.subheader(f"📊 Dự báo sản lượng điện hàng tháng tại {tinh_chon} (năm 2026)")
+    # Biểu đồ sản lượng
+    st.subheader(f"📈 Dự báo sản lượng điện hàng tháng ")
     chart_data = pd.DataFrame({
         "Tháng": [f"Tháng {i + 1}" for i in range(12)],
         "Sản lượng (kWh)": san_luong_thang
     })
     st.bar_chart(chart_data, x="Tháng", y="Sản lượng (kWh)", color="#fbc02d")
+
+    # --- THÔNG TIN LIÊN HỆ ---
+    st.divider()
+    st.subheader("📞 THÔNG TIN TƯ VẤN & LẮP ĐẶT")
+    c_info1, c_info2 = st.columns(2)
+    with c_info1:
+        st.markdown(f"""
+        **Kỹ sư tư vấn:** Ths Phạm Văn Khê  
+        **Kinh nghiệm:** 16 năm trong ngành Điện - Tự động hóa  
+        **Địa bàn:** Cà Mau và các tỉnh miền Tây
+        """)
+    with c_info2:
+        st.markdown("""
+        **Số điện thoại:** 0909008231 
+        **Zalo:** 0909008231 
+        """)
+
+    st.caption("Nguồn dữ liệu bức xạ: Viện Khoa học Khí tượng Thủy văn và Biến đổi khí hậu")
 
 
 if __name__ == '__main__':
