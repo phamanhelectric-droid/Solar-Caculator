@@ -99,7 +99,7 @@ def main():
 
     # --- LIÊN HỆ ---
     st.divider()
-    st.write(f"**Kỹ sư tư vấn:** Phạm Văn Khê - 16 năm kinh nghiệm")
+    st.write(f"**Tư vấn:** Phạm Văn Khê - 16 năm kinh nghiệm")
     st.write(f"**Vùng hỗ trợ:** Cà Mau & Miền Tây")
     st.write(f"**Số điện thoại liên hệ:** 0909008231")
     st.write(f"**Zalo:** 0909008231")
@@ -108,4 +108,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
